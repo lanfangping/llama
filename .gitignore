@@ -167,3 +167,6 @@ tokenizer.model
 
 # ignore test file, i.e., named `test`
 test.*
+
+# ignore logs
+logs/*
