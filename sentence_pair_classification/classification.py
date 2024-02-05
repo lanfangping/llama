@@ -23,7 +23,7 @@ logging.basicConfig(format='%(asctime)s - %(module)s - %(message)s', filename=lo
 path_to_csv_file='../../CompareDBDoc/datasets/data_humanlabel/sampled_data_Jan19.csv'
 path_to_output_file = './llama2_7b_data/llama2_7b_response_data_Jan19.csv'
 begin_index = 0
-batch_size = 1
+batch_size = 5
 
 # for old, new in data.construct_pairs_sequence(path_to_csv_file):
 #     print(old)
@@ -67,7 +67,7 @@ def main(
     labeled_datas = []
     exceptional_pair_ids = []
     try:
-        for pair_ids, dialogs in tqdm(construct_dialogs_in_batch(path_to_csv_file, batch=batch_size, begin_index=begin_index), total=(129-begin_index)//5):
+        for pair_ids, dialogs in tqdm(construct_dialogs_in_batch(path_to_csv_file, batch=batch_size, begin_index=begin_index), total=(129-begin_index)//batch_size):
             
             try:
                 results = generator.chat_completion(
@@ -80,14 +80,14 @@ def main(
                 exceptional_pair_ids += pair_ids
                 logging.error("Exception occurred", exc_info=True)
                 logging.info('Exception pair_ids: {}'.format(pair_ids))
-                break
+                continue
 
             else:
                 for idx, result in enumerate(results):
 
                     record = {
                         'pair_id': pair_ids[idx],
-                        "response": result['generation']['content']
+                        "response": result['generation']['content'].replace("|", "\\")
                     }
 
                     labeled_datas.append(record)
@@ -102,7 +102,9 @@ def main(
             extension = path_to_output_file.split('.')[-1].strip()
             # print("filename", filename)
             # print("extension", extension)
-            convert_to_csv(labeled_datas, filename + "_idx" + str(begin_index) + "_" + str(current_time)  + "." + extension)
+            outputname = filename + "_idx" + str(begin_index) + "_" + str(current_time)  + "." + extension
+            print(outputname)
+            convert_to_csv(labeled_datas, outputname)
         except Exception as e:
             logging.error("Save Exception occurred", exc_info=True)
         else: 
